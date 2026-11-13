@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Sum Ledger</title>
+    <link rel="stylesheet" href="/style.css" />
+    <script type="module" src="/app.js"></script>
+  </head>
+  <body>
+    <header>
+      <a href="/">∑ / Sum Ledger</a><span>Notes on numerical precision</span
+      ><button id="export" disabled>Save evidence</button>
+    </header>
+    <main>
+      <section class="intro">
+        <p class="kicker">Small numbers. Lasting consequences.</p>
+        <h1>Where did<br />the one go?</h1>
+        <p>
+          Change the order. Follow the rounding.<br />Compare four algorithms
+          with an exact sum of the parsed binary values.
+        </p>
+      </section>
+      <div class="controls">
+        <label
+          >Study<select id="example">
+            <option value="cancellation">A disappearing one</option>
+            <option value="absorption">Thirty-two small additions</option>
+            <option value="pennies">One hundred pennies</option>
+            <option value="subnormal">At the smallest scale</option>
+          </select></label
+        ><label
+          >Input order<select id="order">
+            <option value="original">As written</option>
+            <option value="reverse">Reversed</option>
+            <option value="ascending">Small magnitudes first</option>
+            <option value="descending">Large magnitudes first</option>
+          </select></label
+        ><button id="run">Recalculate</button>
+      </div>
+      <p id="message" role="status">Calculating…</p>
+      <section
+        class="answers"
+        id="answers"
+        aria-label="Algorithm comparison"
+      ></section>
+      <section class="reference">
+        <div>
+          <p class="kicker">Correctly rounded reference</p>
+          <strong id="reference">—</strong>
+          <p id="exactness"></p>
+        </div>
+        <div>
+          <p class="kicker">Condition estimate</p>
+          <strong id="condition">—</strong>
+          <p>Σ|xᵢ| / |Σxᵢ| · sensitive sums have large values</p>
+        </div>
+      </section>
+      <section class="trace">
+        <div class="section-title">
+          <h2>Every addition leaves a trace.</h2>
+          <label
+            >Inspect prefix<input
+              id="step"
+              type="range"
+              min="1"
+              max="3"
+              value="3" /><output id="step-label"></output
+          ></label>
+        </div>
+        <svg
+          id="chart"
+          viewBox="0 0 960 260"
+          role="img"
+          aria-label="Absolute prefix error for naive, Kahan, and Neumaier sums"
+        ></svg>
+        <p class="legend">
+          <span>● Naive</span><span>● Kahan</span><span>● Neumaier</span>
+          <small
+            >Height = log₁₀(1 + absolute error). Pairwise is compared at the
+            final sum only.</small
+          >
+        </p>
+        <div id="inspection"></div>
+      </section>
+      <details>
+        <summary>Edit the input sequence</summary>
+        <label class="editor-label"
+          >Decimal values · whitespace, comma, or semicolon separated<textarea
+            id="input"
+            rows="10"
+            spellcheck="false"
+          ></textarea>
+        </label>
+        <p>
+          1–2,048 values, each at most 1e300 in magnitude. Changing the text
+          marks results stale until recalculated. Decimal literals are first
+          rounded by JavaScript to binary64.
+        </p>
+      </details>
+      <details>
+        <summary>Inspect the exact reference</summary>
+        <p>
+          The accumulator adds integer multiples of 2⁻¹⁰⁷⁴ using BigInt. It
+          rounds only once, to nearest with ties to even. Exact zero has no
+          preserved sign.
+        </p>
+        <p id="dyadic"></p>
+        <pre id="decimal"></pre>
+        <p>
+          The reference is exact for the parsed binary values. It is not the
+          exact sum of the original decimal fractions: 100 copies of 0.01
+          illustrate this distinction.
+        </p>
+      </details>
+      <details>
+        <summary>How the methods differ</summary>
+        <p>
+          Naive adds from left to right. Kahan carries a correction into the
+          next addition. Neumaier also compensates when the new term is larger
+          than the running sum. Pairwise recursively divides the ordered
+          sequence at its midpoint, sums both halves, then combines them.
+        </p>
+        <p>
+          The error is measured against the exact binary sum, not just its
+          rounded display. A correctly rounded result can still have a nonzero
+          exact error. The condition estimate uses rounded totals and can
+          overflow; it is a sensitivity indicator, not an error bound. These
+          methods use binary64 throughout; the exact reference uses a separate
+          BigInt representation.
+        </p>
+      </details>
+    </main>
+    <footer>Keep the remainder.</footer>
+  </body>
+</html>
