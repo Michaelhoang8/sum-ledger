@@ -14,6 +14,8 @@ python run.py --port 8000
 
 Open http://127.0.0.1:8000. Computation runs locally in a browser worker. Inputs are not uploaded or persisted. The server exposes only a fixed asset allowlist.
 
+The comparison is presented as a numerical ledger, with the exact reference above and prefix errors below. Prefix selection moves the cursor and markers without rebuilding paths or recalculating every exact error. The sequence editor opens in a dialog; motion respects reduced-motion preferences.
+
 ## Experiments
 
 - **A disappearing one:** `1e16, 1, -1e16` gives 0 for naive, Kahan, and this pairwise split; Neumaier gives 1. Large magnitudes first lets naive recover 1, but this pairwise split still returns 0.

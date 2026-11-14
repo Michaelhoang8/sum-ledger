@@ -9,25 +9,20 @@
   </head>
   <body>
     <header>
-      <a href="/">∑ / Sum Ledger</a><span>Notes on numerical precision</span
-      ><button id="export" disabled>Save evidence</button>
+      <h1>Sum Ledger</h1>
+      <div class="header-actions">
+        <button id="edit-open">Edit sequence</button
+        ><button id="export" disabled>Save evidence</button>
+      </div>
     </header>
     <main>
-      <section class="intro">
-        <p class="kicker">Small numbers. Lasting consequences.</p>
-        <h1>Where did<br />the one go?</h1>
-        <p>
-          Change the order. Follow the rounding.<br />Compare four algorithms
-          with an exact sum of the parsed binary values.
-        </p>
-      </section>
       <div class="controls">
         <label
           >Study<select id="example">
-            <option value="cancellation">A disappearing one</option>
-            <option value="absorption">Thirty-two small additions</option>
-            <option value="pennies">One hundred pennies</option>
-            <option value="subnormal">At the smallest scale</option>
+            <option value="cancellation">Cancellation</option>
+            <option value="absorption">Absorbed additions</option>
+            <option value="pennies">Repeated decimals</option>
+            <option value="subnormal">Subnormal values</option>
           </select></label
         ><label
           >Input order<select id="order">
@@ -39,11 +34,6 @@
         ><button id="run">Recalculate</button>
       </div>
       <p id="message" role="status">Calculating…</p>
-      <section
-        class="answers"
-        id="answers"
-        aria-label="Algorithm comparison"
-      ></section>
       <section class="reference">
         <div>
           <p class="kicker">Correctly rounded reference</p>
@@ -56,9 +46,15 @@
           <p>Σ|xᵢ| / |Σxᵢ| · sensitive sums have large values</p>
         </div>
       </section>
+      <section
+        class="answers"
+        id="answers"
+        aria-label="Algorithm comparison"
+      ></section>
+
       <section class="trace">
         <div class="section-title">
-          <h2>Every addition leaves a trace.</h2>
+          <h2>Prefix error</h2>
           <label
             >Inspect prefix<input
               id="step"
@@ -83,8 +79,12 @@
         </p>
         <div id="inspection"></div>
       </section>
-      <details>
-        <summary>Edit the input sequence</summary>
+      <dialog id="edit-dialog" aria-labelledby="edit-title">
+        <div class="section-title">
+          <h2 id="edit-title">Input sequence</h2>
+          <button id="edit-close">Close</button>
+        </div>
+        <p id="edit-message" role="status"></p>
         <label class="editor-label"
           >Decimal values · whitespace, comma, or semicolon separated<textarea
             id="input"
@@ -97,7 +97,7 @@
           marks results stale until recalculated. Decimal literals are first
           rounded by JavaScript to binary64.
         </p>
-      </details>
+      </dialog>
       <details>
         <summary>Inspect the exact reference</summary>
         <p>
@@ -131,6 +131,5 @@
         </p>
       </details>
     </main>
-    <footer>Keep the remainder.</footer>
   </body>
 </html>

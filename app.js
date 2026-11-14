@@ -3,7 +3,10 @@ const $ = (id) => document.getElementById(id),
   worker = new Worker("/worker.js", { type: "module" });
 let result,
   sequence = 0,
-  stale = true;
+  stale = true,
+  chartResult = null,
+  chartErrors = [],
+  chartPeak = 1;
 const fmt = (x) => (Object.is(x, -0) ? "−0" : String(x)),
   titles = {
     naive: "Naive",
@@ -11,7 +14,7 @@ const fmt = (x) => (Object.is(x, -0) ? "−0" : String(x)),
     neumaier: "Neumaier",
     pairwise: "Pairwise",
   },
-  colors = ["#efb484", "#b1b8f3", "#99d3b6"];
+  colors = ["#ba713f", "#8176b6", "#5d947f"];
 function el(tag, text) {
   const node = document.createElement(tag);
   node.textContent = text;
@@ -20,6 +23,8 @@ function el(tag, text) {
 function message(text, error = false) {
   $("message").textContent = text;
   $("message").classList.toggle("error", error);
+  $("edit-message").textContent = text;
+  $("edit-message").classList.toggle("error", error);
 }
 function markStale() {
   sequence++;
@@ -63,60 +68,82 @@ function inspect() {
   draw(step);
 }
 function draw(step) {
-  const chart = $("chart");
-  chart.replaceChildren();
-  const keys = ["naive", "kahan", "neumaier"];
-  const errors = keys.map((key) =>
-    result.trace.map((row) => {
-      const delta = units(row[key]) - BigInt(row.exactUnits);
-      return Math.log10(1 + rounded(delta < 0n ? -delta : delta));
-    }),
-  );
-  const peak = Math.max(1, ...errors.flat()),
-    x = (i) => 40 + (result.count === 1 ? 0 : i / (result.count - 1)) * 880,
-    y = (v) => 220 - (v / peak) * 180;
-  chart.append(
-    svg("line", { x1: 40, y1: 220, x2: 920, y2: 220, stroke: "#59617a" }),
-  );
-  for (let i = 0; i < keys.length; i++)
-    chart.append(
-      svg("path", {
-        d: errors[i].map((v, j) => `${j ? "L" : "M"}${x(j)},${y(v)}`).join(" "),
-        fill: "none",
-        stroke: colors[i],
-        "stroke-width": 2.5,
-        "stroke-dasharray": i === 1 ? "6 4" : i === 2 ? "2 4" : "none",
+  const chart = $("chart"),
+    keys = ["naive", "kahan", "neumaier"];
+  const x = (i) => 40 + (result.count === 1 ? 0 : i / (result.count - 1)) * 880;
+  if (chartResult !== result) {
+    chartErrors = keys.map((key) =>
+      result.trace.map((row) => {
+        const delta = units(row[key]) - BigInt(row.exactUnits);
+        return Math.log10(1 + rounded(delta < 0n ? -delta : delta));
       }),
     );
-  chart.append(
-    svg("line", {
-      x1: x(step - 1),
-      x2: x(step - 1),
-      y1: 25,
-      y2: 225,
-      stroke: "#e7e6f2",
-      "stroke-dasharray": "3 5",
-    }),
-  );
-  for (let i = 0; i < keys.length; i++)
+    chartPeak = Math.max(1, ...chartErrors.flat());
+    chart.replaceChildren();
     chart.append(
-      svg("circle", {
-        cx: x(step - 1),
-        cy: y(errors[i][step - 1]),
-        r: 4,
-        fill: colors[i],
+      svg("rect", { id: "prefix-wash", x: 40, y: 25, width: 0, height: 200 }),
+    );
+    for (let i = 0; i <= 4; i++) {
+      const yy = 220 - i * 45;
+      chart.append(
+        svg("line", { x1: 40, x2: 920, y1: yy, y2: yy, class: "grid-line" }),
+      );
+      const label = svg("text", { x: 5, y: yy + 4 });
+      label.textContent = ((chartPeak * i) / 4).toFixed(2);
+      chart.append(label);
+    }
+    for (let i = 0; i < keys.length; i++)
+      chart.append(
+        svg("path", {
+          d: chartErrors[i]
+            .map(
+              (v, j) =>
+                `${j ? "L" : "M"}${x(j)},${220 - (v / chartPeak) * 180}`,
+            )
+            .join(" "),
+          fill: "none",
+          stroke: colors[i],
+          "stroke-width": 2.5,
+          "stroke-dasharray": i === 1 ? "6 4" : i === 2 ? "2 4" : "none",
+          class: "trace-line",
+        }),
+      );
+    chart.append(
+      svg("line", {
+        id: "prefix-cursor",
+        x1: 0,
+        x2: 0,
+        y1: 25,
+        y2: 225,
+        "stroke-dasharray": "3 5",
       }),
     );
-  for (const [label, xx, yy] of [
-    ["0", 14, 224],
-    [peak.toFixed(2), 5, 35],
-    ["Prefix 1", 40, 246],
-    [String(result.count), 900, 246],
-  ]) {
-    const t = svg("text", { x: xx, y: yy, fill: "#afb4ce", "font-size": 11 });
-    t.textContent = label;
-    chart.append(t);
+    for (let i = 0; i < keys.length; i++)
+      chart.append(
+        svg("circle", {
+          id: `marker-${i}`,
+          cx: 0,
+          cy: 0,
+          r: 4,
+          fill: colors[i],
+          class: "trace-marker",
+        }),
+      );
+    for (const [label, xx] of [
+      ["Prefix 1", 40],
+      [String(result.count), 900],
+    ]) {
+      const t = svg("text", { x: xx, y: 246 });
+      t.textContent = label;
+      chart.append(t);
+    }
+    chartResult = result;
   }
+  $("prefix-wash").style.width = `${x(step - 1) - 40}px`;
+  $("prefix-cursor").style.transform = `translateX(${x(step - 1)}px)`;
+  for (let i = 0; i < keys.length; i++)
+    $(`marker-${i}`).style.transform =
+      `translate(${x(step - 1)}px,${220 - (chartErrors[i][step - 1] / chartPeak) * 180}px)`;
 }
 function render() {
   $("answers").replaceChildren(
@@ -182,6 +209,8 @@ worker.onmessage = ({ data }) => {
 };
 worker.onerror = () =>
   message("The calculation worker failed. Reload to restart it.", true);
+$("edit-open").onclick = () => $("edit-dialog").showModal();
+$("edit-close").onclick = () => $("edit-dialog").close();
 $("run").onclick = run;
 $("input").oninput = markStale;
 $("order").onchange = run;
